@@ -236,8 +236,8 @@ def calculate_vision_tokens(image: Image, detail: str = "auto") -> int:
 
 def _add_usage(usage1: RequestUsage, usage2: RequestUsage) -> RequestUsage:
     return RequestUsage(
-        prompt_tokens=usage1.prompt_tokens + usage2.prompt_tokens,
-        completion_tokens=usage1.completion_tokens + usage2.completion_tokens,
+        prompt_tokens=(usage1.prompt_tokens or 0) + (usage2.prompt_tokens or 0),
+        completion_tokens=(usage1.completion_tokens or 0) + (usage2.completion_tokens or 0),
     )
 
 
