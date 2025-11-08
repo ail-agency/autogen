@@ -743,11 +743,13 @@ class AssistantAgent(BaseChatAgent, Component[AssistantAgentConfig]):
         output_content_type_format: str | None = None,
         memory: Sequence[Memory] | None = None,
         metadata: Dict[str, str] | None = None,
+        tool_choice: str | None = "auto",
     ):
         super().__init__(name=name, description=description)
         self._metadata = metadata or {}
         self._model_client = model_client
         self._model_client_stream = model_client_stream
+        self.tool_choice = tool_choice
         self._output_content_type: type[BaseModel] | None = output_content_type
         self._output_content_type_format = output_content_type_format
         self._structured_message_factory: StructuredMessageFactory | None = None
@@ -961,6 +963,7 @@ class AssistantAgent(BaseChatAgent, Component[AssistantAgentConfig]):
             cancellation_token=cancellation_token,
             output_content_type=output_content_type,
             message_id=message_id,
+            tool_choice=self.tool_choice,
         ):
             if isinstance(inference_output, CreateResult):
                 model_result = inference_output
@@ -1007,6 +1010,7 @@ class AssistantAgent(BaseChatAgent, Component[AssistantAgentConfig]):
             output_content_type=output_content_type,
             message_id=message_id,
             format_string=self._output_content_type_format,
+            tool_choice=self.tool_choice,
         ):
             yield output_event
 
@@ -1065,6 +1069,7 @@ class AssistantAgent(BaseChatAgent, Component[AssistantAgentConfig]):
         cancellation_token: CancellationToken,
         output_content_type: type[BaseModel] | None,
         message_id: str,
+        tool_choice: str | None = "auto",
     ) -> AsyncGenerator[Union[CreateResult, ModelClientStreamingChunkEvent], None]:
         """Call the language model with given context and configuration.
 
@@ -1095,6 +1100,7 @@ class AssistantAgent(BaseChatAgent, Component[AssistantAgentConfig]):
                 tools=tools,
                 json_output=output_content_type,
                 cancellation_token=cancellation_token,
+                tool_choice=tool_choice,
             ):
                 if isinstance(chunk, CreateResult):
                     model_result = chunk
@@ -1111,6 +1117,7 @@ class AssistantAgent(BaseChatAgent, Component[AssistantAgentConfig]):
                 tools=tools,
                 cancellation_token=cancellation_token,
                 json_output=output_content_type,
+                tool_choice=tool_choice,
             )
             yield model_result
 
@@ -1135,6 +1142,7 @@ class AssistantAgent(BaseChatAgent, Component[AssistantAgentConfig]):
         output_content_type: type[BaseModel] | None,
         message_id: str,
         format_string: str | None = None,
+        tool_choice: str | None = "auto",
     ) -> AsyncGenerator[BaseAgentEvent | BaseChatMessage | Response, None]:
         """
         Handle final or partial responses from model_result, including tool calls, handoffs,
@@ -1271,6 +1279,7 @@ class AssistantAgent(BaseChatAgent, Component[AssistantAgentConfig]):
                 cancellation_token=cancellation_token,
                 output_content_type=output_content_type,
                 message_id=message_id,  # Use same message ID for consistency
+                tool_choice=tool_choice,
             ):
                 if isinstance(llm_output, CreateResult):
                     next_model_result = llm_output
